@@ -6,6 +6,7 @@ build/
 !**/src/test/**/build/
 
 application-routes.yml
+application-jwt.yml
 
 ### STS ###
 .apt_generated
