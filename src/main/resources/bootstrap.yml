@@ -1,10 +1,21 @@
 spring:
   cloud:
     config:
-      uri: http://localhost:8888
+      uri: ${CONFIG_SERVER_URI}
       name: gateway-service
+  rabbitmq:
+    port: ${RABBITMQ_PORT}
+    host: ${RABBITMQ_HOST}
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
 
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: ${EUREKA_SERVER_URI}
+
+management:
+  endpoint:
+    web:
+    exposure:
+      include: bus-refresh, health
