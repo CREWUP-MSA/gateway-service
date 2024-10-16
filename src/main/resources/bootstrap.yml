@@ -3,21 +3,3 @@ spring:
     config:
       uri: ${CONFIG_SERVER_URI}
       name: gateway-service
-  rabbitmq:
-    port: ${RABBITMQ_PORT}
-    host: ${RABBITMQ_HOST}
-    username: ${RABBITMQ_USERNAME}
-    password: ${RABBITMQ_PASSWORD}
-
-eureka:
-  client:
-    service-url:
-      defaultZone: ${EUREKA_SERVER_URI}
-  instance:
-    prefer-ip-address: true
-
-management:
-  endpoint:
-    web:
-    exposure:
-      include: bus-refresh, health
