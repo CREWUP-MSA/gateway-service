@@ -16,6 +16,15 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v3
 
+      - name: Set environment variables from GitHub Secrets
+        run: |
+          echo "CONFIG_SERVER_URI=${{ secrets.CONFIG_SERVER_URI }}" >> $GITHUB_ENV
+          echo "RABBITMQ_HOST=${{ secrets.RABBITMQ_HOST }}" >> $GITHUB_ENV
+          echo "RABBITMQ_PORT=${{ secrets.RABBITMQ_PORT }}" >> $GITHUB_ENV
+          echo "RABBITMQ_USERNAME=${{ secrets.RABBITMQ_USERNAME }}" >> $GITHUB_ENV
+          echo "RABBITMQ_PASSWORD=${{ secrets.RABBITMQ_PASSWORD }}" >> $GITHUB_ENV
+          echo "SERVER_IP=${{ secrets.SERVER_IP }}" >> $GITHUB_ENV
+
       - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
