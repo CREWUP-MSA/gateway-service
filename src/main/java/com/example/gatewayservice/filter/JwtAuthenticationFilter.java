@@ -19,6 +19,7 @@ import org.springframework.web.server.ResponseStatusException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.web.server.ServerWebExchange;
 
 @Component
 public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAuthenticationFilter.Config> {
@@ -41,15 +42,10 @@ public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAut
 	@Override
 	public GatewayFilter apply(Config config) {
 		return (exchange, chain) -> {
-			String path = exchange.getRequest().getPath().toString();
-			String method = exchange.getRequest().getMethod().toString();
-
-			log.info("path={}, method={}", path, method);
-
 			/*
 			  회원 가입 API 는 인증 필터를 거치지 않도록 예외 처리
 			 */
-			if (path.equals("/member-service/api/member") && method.equals("POST"))
+			if (isExcludedPathAndMethod(exchange))
 				return chain.filter(exchange);
 
 
@@ -59,6 +55,13 @@ public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAut
 
 			return chain.filter(exchange);
 		};
+	}
+
+	private boolean isExcludedPathAndMethod(ServerWebExchange exchange) {
+		String path = exchange.getRequest().getPath().toString();
+		String method = exchange.getRequest().getMethod().toString();
+
+		return path.equals("/member-service/api/member") && method.equals("POST");
 	}
 
 	private void validateToken(String token) {
