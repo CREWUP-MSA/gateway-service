@@ -41,6 +41,17 @@ public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAut
 	@Override
 	public GatewayFilter apply(Config config) {
 		return (exchange, chain) -> {
+			String path = exchange.getRequest().getPath().toString();
+			String method = exchange.getRequest().getMethod().toString();
+
+			log.info("path={}, method={}", path, method);
+
+			/*
+			  회원 가입 API 는 인증 필터를 거치지 않도록 예외 처리
+			 */
+			if (path.equals("/member-service/api/member") && method.equals("POST"))
+				return chain.filter(exchange);
+
 
 			String token = resolveToken(exchange.getRequest());
 			if (StringUtils.hasText(token))
