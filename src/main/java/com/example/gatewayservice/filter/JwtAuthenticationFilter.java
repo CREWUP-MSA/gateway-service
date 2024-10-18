@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -43,11 +44,29 @@ public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAut
 		return (exchange, chain) -> {
 
 			String token = resolveToken(exchange.getRequest());
-			if (StringUtils.hasText(token))
+			if (StringUtils.hasText(token)) {
 				validateToken(token);
+
+				String subject = extractSubject(token);
+				ServerHttpRequest request = exchange.getRequest().mutate()
+					.header("X-Member-Id", subject)
+					.build();
+
+				return chain.filter(exchange.mutate().request(request).build());
+			}
 
 			return chain.filter(exchange);
 		};
+	}
+
+	private String extractSubject(String token) {
+		Claims claims = Jwts.parserBuilder()
+			.setSigningKey(signingKey)
+			.build()
+			.parseClaimsJws(token)
+			.getBody();
+
+		return claims.getSubject();
 	}
 
 	private void validateToken(String token) {
