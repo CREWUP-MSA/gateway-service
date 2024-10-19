@@ -8,3 +8,14 @@ spring:
     host: ${RABBITMQ_HOST}
     username: ${RABBITMQ_USERNAME}
     password: ${RABBITMQ_PASSWORD}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URI}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: bus-refresh
