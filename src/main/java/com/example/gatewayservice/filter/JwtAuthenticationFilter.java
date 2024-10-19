@@ -26,34 +26,39 @@ import reactor.core.publisher.Mono;
 
 @Component
 @Slf4j
-public class JwtAuthenticationFilter implements GatewayFilter {
+public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAuthenticationFilter.Config> {
 
 	@Value("${jwt.secret}")
 	private final String secretKey;
 	private final SecretKey signingKey;
 
 	public JwtAuthenticationFilter(@Value("${jwt.secret}") String secretKey) {
+		super(Config.class);
 		this.secretKey = Base64.getEncoder().encodeToString(secretKey.getBytes());
 		this.signingKey = Keys.hmacShaKeyFor(this.secretKey.getBytes());
 	}
 
+	public static class Config { }
+
 	@Override
-	public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-		// 회원 가입 API 는 인증 필터를 거치지 않도록 예외 처리
-		if (isExcludedPathAndMethod(exchange))
-			return chain.filter(exchange);
+	public GatewayFilter apply(Config config) {
+		return (exchange, chain) -> {
+			// 회원 가입 API 는 인증 필터를 거치지 않도록 예외 처리
+			if (isExcludedPathAndMethod(exchange))
+				return chain.filter(exchange);
 
-		String token = resolveToken(exchange.getRequest());
-		if (!StringUtils.hasText(token))
-			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authorization header is empty");
+			String token = resolveToken(exchange.getRequest());
+			if (!StringUtils.hasText(token))
+				throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authorization header is empty");
 
-		validateToken(token);
-		String subject = extractSubject(token);
-		ServerHttpRequest request = exchange.getRequest().mutate()
+			validateToken(token);
+			String subject = extractSubject(token);
+			ServerHttpRequest request = exchange.getRequest().mutate()
 				.header("X-Member-Id", subject)
 				.build();
 
-		return chain.filter(exchange.mutate().request(request).build());
+			return chain.filter(exchange.mutate().request(request).build());
+		};
 	}
 
 	private String extractSubject(String token) {
