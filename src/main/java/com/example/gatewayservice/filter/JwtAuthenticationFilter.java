@@ -28,7 +28,7 @@ public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAut
 
 	@Value("${jwt.secret}")
 	private final String secretKey;
-	private SecretKey signingKey;
+	private final SecretKey signingKey;
 
 	public JwtAuthenticationFilter(@Value("${jwt.secret}") String secretKey) {
 		super(Config.class);
@@ -86,6 +86,5 @@ public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAut
 			log.info("resolveToken: Invalid or expired JWT token");
 			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or expired JWT token");
 		}
-
 	}
 }
