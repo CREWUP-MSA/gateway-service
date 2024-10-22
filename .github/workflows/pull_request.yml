@@ -24,7 +24,7 @@ jobs:
           echo "CONFIG_SERVER_URI=${{ secrets.CONFIG_SERVER_URI }}" >> $GITHUB_ENV
           echo "SERVER_IP=${{ secrets.SERVER_IP }}" >> $GITHUB_ENV
           echo "KAFKA_HOST=${{ secrets.KAFKA_HOST }}" >> $GITHUB_ENV
-          echo "KAFKA_PORT=${{ secrets.KAFKA_PORT }}" >> $GITHUB_ENVV
+          echo "KAFKA_PORT=${{ secrets.KAFKA_PORT }}" >> $GITHUB_ENV
         shell: bash
 
       - name: Set permission for gradlew
