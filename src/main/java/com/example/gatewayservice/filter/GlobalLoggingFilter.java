@@ -21,7 +21,7 @@ public class GlobalLoggingFilter implements GlobalFilter, Ordered {
 
 		return chain.filter(exchange).then(Mono.fromRunnable(() -> {
 			long endTime = System.currentTimeMillis() - startTime;
-			log.info("Response URL - {}, Status Code - {}, Elapsed Time - {}ms",exchange.getRequest().getURI(), exchange.getResponse().getStatusCode(), endTime);
+			log.info("Response URL - {}, Status Code - {}, Elapsed Time - {}ms",exchange.getRequest().getURI().getPath(), exchange.getResponse().getStatusCode(), endTime);
 		}));
 	}
 
