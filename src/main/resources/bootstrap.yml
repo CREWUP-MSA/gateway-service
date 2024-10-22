@@ -3,11 +3,11 @@ spring:
     config:
       uri: ${CONFIG_SERVER_URI}
       name: gateway-service
-  rabbitmq:
-    port: ${RABBITMQ_PORT}
-    host: ${RABBITMQ_HOST}
-    username: ${RABBITMQ_USERNAME}
-    password: ${RABBITMQ_PASSWORD}
+    bus:
+      enabled: true
+
+  kafka:
+    bootstrap-servers: ${KAFKA_HOST}:${KAFKA_PORT}
 
 eureka:
   client:
