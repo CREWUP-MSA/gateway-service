@@ -39,7 +39,7 @@ public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAut
 	@Override
 	public GatewayFilter apply(Config config) {
 		return (exchange, chain) -> {
-			// 회원 가입 API 는 인증 필터를 거치지 않도록 예외 처리
+
 			if (isExcludedPathAndMethod(exchange))
 				return chain.filter(exchange);
 
@@ -66,11 +66,20 @@ public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAut
 			.getSubject();
 	}
 
+	/**
+	 * Jwt 검증 제외 경로 및 메소드
+	 * 회원가입, swagger-ui 접근은 Jwt 검증 제외
+	 * @param exchange ServerWebExchange
+	 * @return boolean 검증 제외 여부
+ 	 */
 	private boolean isExcludedPathAndMethod(ServerWebExchange exchange) {
 		String path = exchange.getRequest().getPath().toString();
 		String method = exchange.getRequest().getMethod().toString();
 
-		return path.equals("/member-service/api/member") && method.equals("POST");
+		return (path.equals("/member-service/api/member") && method.equals("POST")) ||
+				(path.equals("/member-service/swagger-ui/index.html") && method.equals("GET")) ||
+				(path.equals("/auth-service/swagger-ui/index.html") && method.equals("GET")) ||
+				(path.equals("/crewup-service/swagger-ui/index.html") && method.equals("GET"));
 	}
 
 	private void validateToken(String token) {
