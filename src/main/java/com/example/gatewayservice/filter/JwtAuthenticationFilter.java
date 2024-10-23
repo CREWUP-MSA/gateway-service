@@ -4,21 +4,24 @@ import java.util.Base64;
 
 import javax.crypto.SecretKey;
 
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.UnsupportedJwtException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-import org.springframework.web.server.ResponseStatusException;
 
-import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.web.server.ServerWebExchange;
+
+import com.example.gatewayservice.exception.JwtErrorCode;
+import com.example.gatewayservice.exception.JwtException;
 
 @Component
 @Slf4j
@@ -39,13 +42,13 @@ public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAut
 	@Override
 	public GatewayFilter apply(Config config) {
 		return (exchange, chain) -> {
-			// 회원 가입 API 는 인증 필터를 거치지 않도록 예외 처리
+
 			if (isExcludedPathAndMethod(exchange))
 				return chain.filter(exchange);
 
 			String token = resolveToken(exchange.getRequest());
 			if (!StringUtils.hasText(token))
-				throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authorization header is empty");
+				throw new JwtException(JwtErrorCode.AUTHORIZATION_HEADER_NOT_FOUND);
 
 			validateToken(token);
 			String subject = extractSubject(token);
@@ -66,11 +69,20 @@ public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAut
 			.getSubject();
 	}
 
+	/**
+	 * Jwt 검증 제외 경로 및 메소드
+	 * 회원가입, swagger-ui 접근은 Jwt 검증 제외
+	 * @param exchange ServerWebExchange
+	 * @return boolean 검증 제외 여부
+ 	 */
 	private boolean isExcludedPathAndMethod(ServerWebExchange exchange) {
 		String path = exchange.getRequest().getPath().toString();
 		String method = exchange.getRequest().getMethod().toString();
 
-		return path.equals("/member-service/api/member") && method.equals("POST");
+		return (path.equals("/member-service/api/member") && method.equals("POST")) ||
+				(path.equals("/member-service/swagger-ui/index.html") && method.equals("GET")) ||
+				(path.equals("/auth-service/swagger-ui/index.html") && method.equals("GET")) ||
+				(path.equals("/crewup-service/swagger-ui/index.html") && method.equals("GET"));
 	}
 
 	private void validateToken(String token) {
@@ -79,11 +91,24 @@ public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAut
 				.setSigningKey(signingKey)
 				.build()
 				.parseClaimsJws(token);
-		}catch (JwtException | IllegalArgumentException e) {
-			log.error("validateToken: Invalid or expired JWT token");
-			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or expired JWT token");
+		} catch (SecurityException e) {
+			log.error("validateToken: Invalid JWT signature");
+			throw new JwtException(JwtErrorCode.INVALID_JWT_SIGNATURE);
+		} catch (ExpiredJwtException e) {
+			log.error("validateToken: Expired JWT token");
+			throw new JwtException(JwtErrorCode.EXPIRED_JWT_TOKEN);
+		} catch (MalformedJwtException e) {
+			log.error("validateToken: Invalid JWT token");
+			throw new JwtException(JwtErrorCode.INVALID_JWT_TOKEN);
+		} catch (UnsupportedJwtException e) {
+			log.error("validateToken: Unsupported JWT token");
+			throw new JwtException(JwtErrorCode.UNSUPPORTED_JWT_TOKEN);
+		} catch (IllegalArgumentException e) {
+			log.error("validateToken: JWT claims string is empty");
+			throw new JwtException(JwtErrorCode.JWT_CLAIMS_EMPTY);
 		}
 	}
+
 
 
 	private String resolveToken(ServerHttpRequest request) {
@@ -93,7 +118,7 @@ public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAut
 			return bearerToken.substring(7);
 		else {
 			log.error("resolveToken: Invalid or expired JWT token");
-			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or expired JWT token");
+			throw new JwtException(JwtErrorCode.INVALID_JWT_TOKEN);
 		}
 	}
 
