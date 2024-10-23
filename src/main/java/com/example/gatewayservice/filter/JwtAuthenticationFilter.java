@@ -80,9 +80,9 @@ public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAut
 		String method = exchange.getRequest().getMethod().toString();
 
 		return (path.equals("/member-service/api/member") && method.equals("POST")) ||
-				(path.equals("/member-service/swagger-ui/index.html") && method.equals("GET")) ||
-				(path.equals("/auth-service/swagger-ui/index.html") && method.equals("GET")) ||
-				(path.equals("/crewup-service/swagger-ui/index.html") && method.equals("GET"));
+				(path.equals("/member-service/swagger-ui.html") && method.equals("GET")) ||
+				(path.equals("/auth-service/swagger-ui.html") && method.equals("GET")) ||
+				(path.equals("/crewup-service/swagger-ui.html") && method.equals("GET"));
 	}
 
 	private void validateToken(String token) {
