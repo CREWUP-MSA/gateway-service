@@ -18,48 +18,44 @@ import org.springframework.util.StringUtils;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import reactor.core.publisher.Mono;
+
 import org.springframework.web.server.ServerWebExchange;
+import org.springframework.web.server.WebFilter;
+import org.springframework.web.server.WebFilterChain;
 
 import com.example.gatewayservice.exception.JwtErrorCode;
 import com.example.gatewayservice.exception.JwtException;
 
 @Component
 @Slf4j
-public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAuthenticationFilter.Config> {
+public class JwtAuthenticationFilter implements WebFilter {
 
 	@Value("${jwt.secret}")
 	private final String secretKey;
 	private final SecretKey signingKey;
 
 	public JwtAuthenticationFilter(@Value("${jwt.secret}") String secretKey) {
-		super(Config.class);
 		this.secretKey = Base64.getEncoder().encodeToString(secretKey.getBytes());
 		this.signingKey = Keys.hmacShaKeyFor(this.secretKey.getBytes());
 	}
 
-	public static class Config { }
 
 	@Override
-	public GatewayFilter apply(Config config) {
-		return (exchange, chain) -> {
+	public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
+		String token = resolveToken(exchange.getRequest());
+		if (!StringUtils.hasText(token))
+			throw new JwtException(JwtErrorCode.AUTHORIZATION_HEADER_NOT_FOUND);
 
-			if (isExcludedPathAndMethod(exchange))
-				return chain.filter(exchange);
+		validateToken(token);
+		String subject = extractSubject(token);
+		ServerHttpRequest request = exchange.getRequest().mutate()
+			.header("X-Member-Id", subject)
+			.build();
 
-			String token = resolveToken(exchange.getRequest());
-			if (!StringUtils.hasText(token))
-				throw new JwtException(JwtErrorCode.AUTHORIZATION_HEADER_NOT_FOUND);
-
-			validateToken(token);
-			String subject = extractSubject(token);
-			ServerHttpRequest request = exchange.getRequest().mutate()
-				.header("X-Member-Id", subject)
-				.build();
-
-			return chain.filter(exchange.mutate().request(request).build());
-		};
+		return chain.filter(exchange.mutate().request(request).build());
 	}
-
+	
 	private String extractSubject(String token) {
 		return Jwts.parserBuilder()
 			.setSigningKey(signingKey)
@@ -67,25 +63,6 @@ public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAut
 			.parseClaimsJws(token)
 			.getBody()
 			.getSubject();
-	}
-
-	/**
-	 * Jwt 검증 제외 경로 및 메소드
-	 * 회원가입, swagger-ui 접근은 Jwt 검증 제외
-	 * @param exchange ServerWebExchange
-	 * @return boolean 검증 제외 여부
- 	 */
-	private boolean isExcludedPathAndMethod(ServerWebExchange exchange) {
-		String path = exchange.getRequest().getPath().toString();
-		String method = exchange.getRequest().getMethod().toString();
-
-		return (path.equals("/member-service/api/member") && method.equals("POST")) ||
-			(path.startsWith("/member-service/swagger-ui") && method.equals("GET")) ||
-			(path.startsWith("/auth-service/swagger-ui") && method.equals("GET")) ||
-			(path.startsWith("/crewup-service/swagger-ui") && method.equals("GET")) ||
-			(path.startsWith("/member-service/v3/api-docs") && method.equals("GET")) ||
-			(path.startsWith("/auth-service/v3/api-docs") && method.equals("GET")) ||
-			(path.startsWith("/crewup-service/v3/api-docs") && method.equals("GET"));
 	}
 
 	private void validateToken(String token) {
