@@ -30,6 +30,7 @@ public class SecurityConfig {
 			.authorizeExchange(exchanges -> exchanges
 				.pathMatchers("/auth-service/**").permitAll()
 				.pathMatchers(HttpMethod.POST, "/member-service/api/member").permitAll()
+				.pathMatchers(HttpMethod.GET, "/member-service/v3/api-docs", "/auth-service/v3/api-docs", "/crewup-service/v3/api-docs").permitAll()
 				.anyExchange().authenticated()
 			)
 			.addFilterAt(jwtAuthenticationFilter, SecurityWebFiltersOrder.AUTHENTICATION)
